@@ -1,4 +1,4 @@
-#!/home/dylan/.virtualenvs/temp/bin/python
+#!/home/dylan/.virtualenvs/qiime/bin/python
 # File created on 09 Feb 2010
 from __future__ import division
 
@@ -67,6 +67,9 @@ script_info['optional_options'] = [
     make_option(
         '-t', '--taxonomy', type='existing_filepath', dest='taxonomy_fname',
         help='Path to taxonomy assignment, containing the assignments of taxons to sequences (i.e., resulting txt file from assign_taxonomy.py) [default: %default]'),
+    make_option(
+        '-c', '--counts', type='existing_filepath', dest='counts_fname',
+        help='Path to counts.  [default: %default]'),
     options_lookup['mapping_fp'],
     make_option('-e', '--exclude_otus_fp', type='existing_filepath',
                 help=("path to a file listing OTU identifiers that should not be included in the "
@@ -88,6 +91,15 @@ def main():
         infile = open(opts.taxonomy_fname, 'U')
         otu_to_taxonomy = parse_taxonomy(infile)
 
+    if not opts.counts_fname:
+        seq_counts = None
+    else:
+        seq_counts = {}
+        with open(opts.counts_fname, 'U') as infile:
+            for line in infile:
+                (key, val) = line.split()
+                seq_counts[key] = val
+
     ids_to_exclude = []
     if exclude_otus_fp:
         if splitext(exclude_otus_fp)[1] in ('.fasta', '.fna'):
@@ -105,12 +117,11 @@ def main():
 
         sample_metadata = mapping_file_to_dict(mapping_data,
                                                mapping_header)
-
     with open(opts.otu_map_fp, 'U') as otu_map_f:
         biom_otu_table = make_otu_table(otu_map_f,
                                         otu_to_taxonomy=otu_to_taxonomy,
                                         otu_ids_to_exclude=ids_to_exclude,
-                                        sample_metadata=sample_metadata)
+                                        sample_metadata=sample_metadata,seq_counts=seq_counts)
 
     write_biom_table(biom_otu_table, opts.output_biom_fp)
 
